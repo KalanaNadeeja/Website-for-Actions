@@ -1,8 +1,9 @@
 {
   "rules": {
-    "tagname-lowercase": true
-  },
-  "exclude": [
-    "vendor/"
-  ]
+    "tag-pair": true,
+    "tagname-lowercase": true,
+    "doctype-first": true,
+    "attr-lowercase": true,
+    "title-require": true
+  }
 }
