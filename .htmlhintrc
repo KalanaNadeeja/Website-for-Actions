@@ -3,7 +3,6 @@
     "tagname-lowercase": true
   },
   "exclude": [
-    "test.html",
     "vendor/"
   ]
 }
