@@ -18,7 +18,9 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Fix PHP code issues
-        run: ~/.composer/vendor/bin/phpcbf --standard=PSR12 --ignore=vendor .
+        # run: ~/.composer/vendor/bin/phpcbf --standard=PSR12 --ignore=vendor .
+        run: $(composer global config home)/vendor/bin/phpcbf --standard=PSR12 --ignore=vendor .
+
 
 
       # Step 2: Set up PHP environment and check PHP code
