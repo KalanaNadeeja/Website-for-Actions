@@ -31,7 +31,7 @@ jobs:
 
         # Step 3: Lint PHP Code (No Auto-Fix)
       - name: Lint PHP Code
-        run: $(composer global config home)/vendor/bin/phpcs --standard=PSR12 --ignore=node_modules --ignore=vendor . || true
+        run: $(composer global config home)/vendor/bin/phpcs --standard=PSR12 --ignore=node_modules,vendor . || true
 
 
 
@@ -48,7 +48,7 @@ jobs:
         run: chmod +x ./node_modules/.bin/eslint
 
       - name: Run ESLint for JavaScript
-        run: npx eslint .--ignore-pattern 'node_modules/*' --ignore-pattern 'dist/*'--ignore-path .eslintignore
+        run: npx eslint .
 
       - name: Run Stylelint for CSS
         run: npx stylelint "**/*.css"
