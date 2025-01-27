@@ -44,8 +44,11 @@ jobs:
       - name: Install Node.js dependencies
         run: npm install
 
+      - name: Fix ESLint Permissions
+        run: chmod +x ./node_modules/.bin/eslint
+
       - name: Run ESLint for JavaScript
-        run: npx eslint .--ignore-pattern 'node_modules/*' --ignore-pattern 'dist/*'
+        run: npx eslint .--ignore-pattern 'node_modules/*' --ignore-pattern 'dist/*'--ignore-path .eslintignore
 
       - name: Run Stylelint for CSS
         run: npx stylelint "**/*.css"
