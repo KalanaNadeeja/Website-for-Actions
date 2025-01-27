@@ -16,5 +16,10 @@
   "bugs": {
     "url": "https://github.com/KalanaNadeeja/Website-for-Actions/issues"
   },
-  "homepage": "https://github.com/KalanaNadeeja/Website-for-Actions#readme"
+  "homepage": "https://github.com/KalanaNadeeja/Website-for-Actions#readme",
+  "devDependencies": {
+    "@eslint/js": "^9.19.0",
+    "eslint": "^9.19.0",
+    "globals": "^15.14.0"
+  }
 }
