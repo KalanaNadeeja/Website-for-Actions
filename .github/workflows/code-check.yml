@@ -23,7 +23,7 @@ jobs:
         with:
           php-version: '8.1'
       - name: Install PHP dependencies
-        run: composer install --no-progress --no-suggest
+        run: composer install --no-progress 
       - name: Run PHP CodeSniffer
         run: |
           composer global require "squizlabs/php_codesniffer=*"
