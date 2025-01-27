@@ -1,0 +1,50 @@
+name: Code Check
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  code-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up PHP environment and check PHP code
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+      - name: Install PHP dependencies
+        run: composer install --no-progress --no-suggest
+      - name: Run PHP CodeSniffer
+        run: |
+          composer global require "squizlabs/php_codesniffer=*"
+          ~/.composer/vendor/bin/phpcs --standard=PSR12 .
+
+      # Step 3: Set up Node.js for JavaScript, CSS, and HTML checks
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Install Node.js dependencies
+        run: npm install
+      - name: Run ESLint for JavaScript
+        run: npx eslint . --ext .js
+      - name: Run Stylelint for CSS
+        run: npx stylelint "**/*.css"
+      - name: Run HTMLHint for HTML
+        run: npx htmlhint "**/*.html"
+
+      # Step 4: (Optional) Run tests if applicable
+      - name: Run tests
+        run: |
+          # Add commands for your testing tools here
+          echo "No tests configured yet"
