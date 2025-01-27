@@ -45,7 +45,7 @@ jobs:
         run: npm install
 
       - name: Run ESLint for JavaScript
-        run: npx eslint . --ext .js
+        run: npx eslint .
 
       - name: Run Stylelint for CSS
         run: npx stylelint "**/*.css"
