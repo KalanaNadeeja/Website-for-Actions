@@ -1,9 +1,8 @@
 {
   "rules": {
-    "tag-pair": true,
     "tagname-lowercase": true,
-    "doctype-first": true,
     "attr-lowercase": true,
+    "doctype-first": true,
     "title-require": true
   }
 }

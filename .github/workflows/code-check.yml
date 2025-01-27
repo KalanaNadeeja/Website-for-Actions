@@ -56,6 +56,10 @@ jobs:
       - name: Fix HTMLHint Permissions
         run: chmod +x ./node_modules/.bin/htmlhint
 
+      - name: Install HTMLHint globally
+        run: npm install -g htmlhint
+        
+
       - name: Run HTMLHint for HTML
         run: npx htmlhint "**/*.html"  || true
 
