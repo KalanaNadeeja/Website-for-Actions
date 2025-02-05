@@ -53,8 +53,8 @@ jobs:
       - name: Run Stylelint for CSS
         run: npx stylelint "**/*.css" || true
 
-      # - name: Fix HTMLHint Permissions
-      #   run: chmod +x ./node_modules/.bin/htmlhint
+      - name: Fix HTMLHint Permissions
+        run: chmod +x ./node_modules/.bin/htmlhint
 
       - name: Install HTMLHint
         run: npm install htmlhint --save-dev
