@@ -53,15 +53,15 @@ jobs:
       - name: Run Stylelint for CSS
         run: npx stylelint "**/*.css" || true
 
-      - name: Fix HTMLHint Permissions
-        run: chmod +x ./node_modules/.bin/htmlhint
+      # - name: Fix HTMLHint Permissions
+      #   run: chmod +x ./node_modules/.bin/htmlhint
 
-      - name: Install HTMLHint globally
-        run: npm install -g htmlhint
-        
-
-      - name: Run HTMLHint for HTML
-        run: npx htmlhint "**/*.html" --ignore="**/vendor/**"  || true
+      - name: Install HTMLHint
+        run: npm install htmlhint --save-dev
+      
+      - name: Run HTMLHint (Excluding Vendor)
+        run: npx htmlhint "**/*.html" --ignore "vendor/**" || true
+    
 
       # Step 5: (Optional) Run tests if applicable
       - name: Run tests
