@@ -1,4 +1,4 @@
-name: Code Check
+name: SonarCloud Analysis
 
 on:
   push:
@@ -9,62 +9,36 @@ on:
       - main
 
 jobs:
-  code-check:
+  sonarcloud:
     runs-on: ubuntu-latest
-
     steps:
-      # Step 1: Checkout the repository code
       - name: Checkout code
         uses: actions/checkout@v3
-
-      # Step 2: Set up PHP environment
-      - name: Set up PHP
-        uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.0'
+          fetch-depth: 0 # Ensures all history is available for SonarCloud
 
-      - name: Install PHP dependencies
-        run: composer install --no-progress
-
-      - name: Install PHP CodeSniffer
-        run: composer global require squizlabs/php_codesniffer
-
-        # Step 3: Lint PHP Code (No Auto-Fix)
-      - name: Lint PHP Code
-        run: $(composer global config home)/vendor/bin/phpcs --standard=PSR12 --ignore=node_modules,vendor . || true
-
-
-
-      # Step 4: Set up Node.js for JavaScript, CSS, and HTML checks
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      - name: Set up Java (required for SonarScanner)
+        uses: actions/setup-java@v3
         with:
-          node-version: '18'
+          distribution: 'temurin'
+          java-version: '17'
 
-      - name: Install Node.js dependencies
-        run: npm install
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
 
-      - name: Fix ESLint Permissions
-        run: chmod +x ./node_modules/.bin/eslint
-
-      - name: Run ESLint for JavaScript
-        run: npx eslint . || true
-
-      - name: Run Stylelint for CSS
-        run: npx stylelint "**/*.css" || true
-
-      - name: Fix HTMLHint Permissions
-        run: chmod +x ./node_modules/.bin/htmlhint
-
-      - name: Install HTMLHint
-        run: npm install htmlhint --save-dev
-      
-      - name: Run HTMLHint (Excluding Vendor)
-        run: npx htmlhint "**/*.html" --config .htmlhintrc || true
-    
-
-      # Step 5: (Optional) Run tests if applicable
-      - name: Run tests
+      - name: Run SonarCloud Scan
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          # Add commands for your testing tools here
-          echo "No tests configured yet"
+          curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
+          unzip sonar-scanner.zip
+          ./sonar-scanner-*/bin/sonar-scanner \
+            -Dsonar.organization=kalananadeeja \
+            -Dsonar.projectKey=KalanaNadeeja_Website-for-Actions> \
+            -Dsonar.sources=. \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.token=$SONAR_TOKEN
