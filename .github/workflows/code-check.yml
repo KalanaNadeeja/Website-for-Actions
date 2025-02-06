@@ -60,7 +60,7 @@ jobs:
         run: npm install htmlhint --save-dev
       
       - name: Run HTMLHint (Excluding Vendor)
-        run: npx htmlhint "**/*.html" --ignore "vendor/**" || true
+        run: npx htmlhint "**/*.html" --config .htmlhintrc || true
     
 
       # Step 5: (Optional) Run tests if applicable

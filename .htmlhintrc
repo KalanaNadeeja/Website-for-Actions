@@ -8,5 +8,8 @@
     "attr-no-duplication": true,  
     "spec-char-escape": true,
     "id-unique": true 
-  }
+  },
+  "exclude": [
+    "vendor/**"
+  ]
 }
