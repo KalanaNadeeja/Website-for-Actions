@@ -16,15 +16,51 @@ jobs:
       # Step 1: Checkout the repository code
       - name: Checkout code
         uses: actions/checkout@v3
+
+      # Step 2: Set up PHP environment
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.0'
+
+      - name: Install PHP dependencies
+        run: composer install --no-progress
+
+      - name: Install PHP CodeSniffer
+        run: composer global require squizlabs/php_codesniffer
+
+        # Step 3: Lint PHP Code (No Auto-Fix)
+      - name: Lint PHP Code
+        id: lint-php
+        run: $(composer global config home)/vendor/bin/phpcs --standard=PSR12 --ignore=node_modules,vendor . || true
+
+
+
+      # Step 4: Set up Node.js for JavaScript, CSS, and HTML checks
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Node.js dependencies
+        run: npm install
+
+      - name: Fix ESLint Permissions
+        run: chmod +x ./node_modules/.bin/eslint
+      - name: Run ESLint for JavaScript
+        id: lint-js
+        run: npx eslint . || true
+        run: npx eslint . || true
       
       - name: Install Stylelint
         run: npm install stylelint --save-dev  
        
       - name: Fix Stylelint Permissions
         run: chmod +x ./node_modules/.bin/stylelint
-
       - name: Run Stylelint for CSS
         id: lint-css
+        run: npx stylelint "**/*.css" || true
+      - name: Run Stylelint for CSS
         run: npx stylelint "**/*.css" || true
 
       - name: Install HTMLHint
@@ -33,7 +69,12 @@ jobs:
       - name: Run HTMLHint (Excluding Vendor)
         id: lint-html
         run: npx htmlhint "**/*.html" --ignore "vendor/**" || true
-        
+      
+      - name: Run HTMLHint (Excluding Vendor)
+        run: npx htmlhint "**/*.html" --ignore "vendor/**" || true
+    
+
+      # Step 5: (Optional) Run tests if applicable
       - name: Run tests
         run: |
           # Add commands for your testing tools here
