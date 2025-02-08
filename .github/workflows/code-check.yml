@@ -77,9 +77,8 @@ jobs:
 
 # Step 6: Send email if errors are found
       - name: Send Email Notification
-        if: ${{ steps.lint-php.outcome == 'failure' || steps.lint-js.outcome == 'failure' || steps.lint-css.outcome == 'failure' || steps.lint-html.outcome == 'failure' }}
         run: |
-          echo "Sending email notification because errors were detected in the repository."
+          echo "Sending email notification for repository update."
           sudo apt-get install msmtp -y
 
           # Configuring msmtp to send mail via SMTP
@@ -93,5 +92,5 @@ jobs:
           echo "tls on" >> ~/.msmtprc
           echo "logfile ~/.msmtp.log" >> ~/.msmtprc
 
-          # Send an email if there were errors in any of the linters
-          echo -e "Subject: Repository Update - Errors Found\n\nErrors were detected in the repository during the latest commit.\n\nPHP Linting: ${{ steps.lint-php.outcome }}\nJavaScript Linting: ${{ steps.lint-js.outcome }}\nCSS Linting: ${{ steps.lint-css.outcome }}\nHTML Linting: ${{ steps.lint-html.outcome }}" | msmtp ${{ secrets.RECIPIENT_EMAIL }}
+          # Send an email notification every time
+          echo -e "Subject: Repository Update - Linting Report\n\nA repository update has occurred. Please check the linting results.\n\nPHP Linting: ${{ steps.lint-php.outcome }}\nJavaScript Linting: ${{ steps.lint-js.outcome }}\nCSS Linting: ${{ steps.lint-css.outcome }}\nHTML Linting: ${{ steps.lint-html.outcome }}" | msmtp ${{ secrets.RECIPIENT_EMAIL }}
