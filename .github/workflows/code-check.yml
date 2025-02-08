@@ -27,13 +27,16 @@ jobs:
         id: lint-css
         run: npx stylelint "**/*.css" || true
 
+      - name: Fix HTMLHint Permissions
+        run: chmod +x ./node_modules/.bin/htmlhint
+
       - name: Install HTMLHint
         run: npm install htmlhint --save-dev
 
       - name: Run HTMLHint (Excluding Vendor)
         id: lint-html
         run: npx htmlhint "**/*.html" --ignore "vendor/**" || true
-        
+
       - name: Run tests
         run: |
           # Add commands for your testing tools here
