@@ -92,5 +92,8 @@ jobs:
           echo "tls on" >> ~/.msmtprc
           echo "logfile ~/.msmtp.log" >> ~/.msmtprc
 
+          # Set file permissions so that only the user can read/write
+          chmod 600 ~/.msmtprc          
+
           # Send an email notification every time
           echo -e "Subject: Repository Update - Linting Report\n\nA repository update has occurred. Please check the linting results.\n\nPHP Linting: ${{ steps.lint-php.outcome }}\nJavaScript Linting: ${{ steps.lint-js.outcome }}\nCSS Linting: ${{ steps.lint-css.outcome }}\nHTML Linting: ${{ steps.lint-html.outcome }}" | msmtp ${{ secrets.RECIPIENT_EMAIL }}
