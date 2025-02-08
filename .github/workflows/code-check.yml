@@ -49,15 +49,18 @@ jobs:
 
       - name: Run ESLint for JavaScript
         run: npx eslint . || true
+      
+      - name: Install Stylelint
+        run: npm install stylelint --save-dev  
 
       - name: Run Stylelint for CSS
         run: npx stylelint "**/*.css" || true
 
-      - name: Fix HTMLHint Permissions
-        run: chmod +x ./node_modules/.bin/htmlhint
-
       - name: Install HTMLHint
         run: npm install htmlhint --save-dev
+
+      - name: Fix HTMLHint Permissions
+        run: chmod +x ./node_modules/.bin/htmlhint
       
       - name: Run HTMLHint (Excluding Vendor)
         run: npx htmlhint "**/*.html" --config .htmlhintrc || true
@@ -68,3 +71,24 @@ jobs:
         run: |
           # Add commands for your testing tools here
           echo "No tests configured yet"
+
+# Step 6: Send email if errors are found
+      - name: Send Email Notification
+        if: ${{ steps.lint-php.outcome == 'failure' || steps.lint-js.outcome == 'failure' || steps.lint-css.outcome == 'failure' || steps.lint-html.outcome == 'failure' }}
+        run: |
+          echo "Sending email notification because errors were detected in the repository."
+          sudo apt-get install msmtp -y
+
+          # Configuring msmtp to send mail via SMTP
+          echo "account default" > ~/.msmtprc
+          echo "host smtp.your-email-provider.com" >> ~/.msmtprc
+          echo "port 587" >> ~/.msmtprc
+          echo "auth on" >> ~/.msmtprc
+          echo "user ${{ secrets.SMTP_USER }}" >> ~/.msmtprc
+          echo "password ${{ secrets.SMTP_PASSWORD }}" >> ~/.msmtprc
+          echo "from ${{ secrets.SMTP_FROM_EMAIL }}" >> ~/.msmtprc
+          echo "tls on" >> ~/.msmtprc
+          echo "logfile ~/.msmtp.log" >> ~/.msmtprc
+
+          # Send an email if there were errors in any of the linters
+          echo -e "Subject: Repository Update - Errors Found\n\nErrors were detected in the repository during the latest commit.\n\nPHP Linting: ${{ steps.lint-php.outcome }}\nJavaScript Linting: ${{ steps.lint-js.outcome }}\nCSS Linting: ${{ steps.lint-css.outcome }}\nHTML Linting: ${{ steps.lint-html.outcome }}" | msmtp ${{ secrets.RECIPIENT_EMAIL }}
