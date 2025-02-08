@@ -84,7 +84,7 @@ jobs:
 
           # Configuring msmtp to send mail via SMTP
           echo "account default" > ~/.msmtprc
-          echo "host smtp.your-email-provider.com" >> ~/.msmtprc
+          echo "host smtp.gmail.com" >> ~/.msmtprc
           echo "port 587" >> ~/.msmtprc
           echo "auth on" >> ~/.msmtprc
           echo "user ${{ secrets.SMTP_USER }}" >> ~/.msmtprc
