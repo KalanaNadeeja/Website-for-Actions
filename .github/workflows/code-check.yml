@@ -42,16 +42,8 @@ jobs:
         id: lint-html
         run: |
           echo "Running HTMLHint on .html files"
-          # Check which files are being passed to HTMLHint
-          files=$(find . -name "*.html" ! -path "./vendor/*")
-
-          if [ -z "$files" ]; then
-            echo "No HTML files found to lint!"
-          else
-            lint_output=$(npx htmlhint "$files" || true)
-            echo "$lint_output"
-            echo "lint_html_output=$lint_output" >> $GITHUB_ENV
-          fi
+          npx htmlhint "**/*.html" --ignore "vendor/**" || true
+          
 
       # Run tests (not configured yet)     
       - name: Run tests
