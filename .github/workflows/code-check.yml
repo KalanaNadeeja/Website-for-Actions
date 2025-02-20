@@ -42,15 +42,18 @@ jobs:
         id: lint-html
         run: |
           echo "Running HTMLHint on .html files"
-          # Print all files that match the pattern to check the paths
-          find . -name "*.html" 
-          
-          # Run HTMLHint with quotes around the paths
-          lint_output=$(npx htmlhint "$(find . -name "*.html" ! -path "./vendor/*")" || true)
-          echo "$lint_output"
-          echo "lint_html_output=$lint_output" >> $GITHUB_ENV
+          # Check which files are being passed to HTMLHint
+          files=$(find . -name "*.html" ! -path "./vendor/*")
 
+          if [ -z "$files" ]; then
+            echo "No HTML files found to lint!"
+          else
+            lint_output=$(npx htmlhint "$files" || true)
+            echo "$lint_output"
+            echo "lint_html_output=$lint_output" >> $GITHUB_ENV
+          fi
 
+      # Run tests (not configured yet)     
       - name: Run tests
         run: |
           # Add commands for your testing tools here
