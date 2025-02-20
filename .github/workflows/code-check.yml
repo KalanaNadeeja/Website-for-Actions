@@ -41,9 +41,15 @@ jobs:
       - name: Run HTMLHint (Excluding Vendor)
         id: lint-html
         run: |
-          lint_output=$(npx htmlhint "**/*.html" --ignore "vendor/**" || true)
+          echo "Running HTMLHint on .html files"
+          # Print all files that match the pattern to check the paths
+          find . -name "*.html" 
+          
+          # Run HTMLHint with quotes around the paths
+          lint_output=$(npx htmlhint "$(find . -name "*.html" ! -path "./vendor/*")" || true)
           echo "$lint_output"
           echo "lint_html_output=$lint_output" >> $GITHUB_ENV
+
 
       - name: Run tests
         run: |
