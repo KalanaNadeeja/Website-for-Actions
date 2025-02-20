@@ -1,0 +1,16 @@
+extends: stylelint-config-standard
+
+rules:
+  alpha-value-notation: "number"
+  color-function-notation: "modern"
+  color-hex-length: "short"
+  comment-whitespace-inside: "always"
+  font-family-name-quotes: "always-where-recommended"
+  function-url-quotes: "always"
+  media-feature-name-no-vendor-prefix: true
+  no-empty-source: true
+  number-max-precision: 4
+  property-no-vendor-prefix: true
+  selector-type-case: "lower"
+  value-keyword-case: "lower"
+  value-no-vendor-prefix: true

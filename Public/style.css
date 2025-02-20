@@ -1,13 +1,21 @@
 
-
-
-body {
+BODY {
     background-color: white;
     font-family: Arial, sans-serif;
+    background-image: url(image.jpg);
 }
 
 
 
 h1 {
-    color: blue;
+    color: #0000ff;
+    font-weight: BOLD;
+}
+
+p {
+    -webkit-border-radius: 10px;
+}
+
+div {
+    width: 12.3456789px;
 }

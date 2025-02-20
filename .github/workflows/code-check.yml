@@ -16,33 +16,41 @@ jobs:
       # Step 1: Checkout the repository code
       - name: Checkout code
         uses: actions/checkout@v3
-      
+
       - name: Install Stylelint
         run: npm install stylelint --save-dev  
-       
+
       - name: Fix Stylelint Permissions
         run: chmod +x ./node_modules/.bin/stylelint
 
+      # Run Stylelint and capture output
       - name: Run Stylelint for CSS
         id: lint-css
-        run: npx stylelint "**/*.css" || true
-
-      - name: Fix HTMLHint Permissions
-        run: chmod +x ./node_modules/.bin/htmlhint
+        run: |
+          lint_output=$(npx stylelint "**/*.css" || true)
+          echo "$lint_output"
+          echo "lint_css_output=$lint_output" >> $GITHUB_ENV
 
       - name: Install HTMLHint
         run: npm install htmlhint --save-dev
 
+      - name: Fix HTMLHint Permissions
+        run: chmod +x ./node_modules/.bin/htmlhint
+
+      # Run HTMLHint and capture output
       - name: Run HTMLHint (Excluding Vendor)
         id: lint-html
-        run: npx htmlhint "**/*.html" --ignore "vendor/**" || true
+        run: |
+          lint_output=$(npx htmlhint "**/*.html" --ignore "vendor/**" || true)
+          echo "$lint_output"
+          echo "lint_html_output=$lint_output" >> $GITHUB_ENV
 
       - name: Run tests
         run: |
           # Add commands for your testing tools here
           echo "No tests configured yet"
 
-# Step 6: Send email if errors are found
+      # Send email notification with linting errors
       - name: Send Email Notification
         run: |
           echo "Sending email notification for repository update."
@@ -62,5 +70,5 @@ jobs:
           # Set file permissions so that only the user can read/write
           chmod 600 ~/.msmtprc          
 
-          # Send an email notification every time
-          echo -e "Subject: Repository Update - Linting Report\n\nA repository update has occurred. Please check the linting results.\n\nPHP Linting: ${{ steps.lint-php.outcome }}\nJavaScript Linting: ${{ steps.lint-js.outcome }}\nCSS Linting: ${{ steps.lint-css.outcome }}\nHTML Linting: ${{ steps.lint-html.outcome }}" | msmtp ${{ secrets.RECIPIENT_EMAIL }}
+          # Send an email notification with linting results
+          echo -e "Subject: Repository Update - Linting Report\n\nA repository update has occurred. Please check the linting results.\n\nCSS Linting:\n${{ env.lint_css_output }}\n\nHTML Linting:\n${{ env.lint_html_output }}" | msmtp ${{ secrets.RECIPIENT_EMAIL }}
