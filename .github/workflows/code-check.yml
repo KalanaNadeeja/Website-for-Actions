@@ -17,34 +17,55 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Install HTMLHint
-        run: npm install htmlhint --save-dev
+      # Install dependencies
+      - name: Install Stylelint and HTMLHint
+        run: npm install stylelint htmlhint --save-dev
 
-      - name: Fix HTMLHint Permissions
-        run: chmod +x ./node_modules/.bin/htmlhint
+      - name: Fix Permissions for Linters
+        run: chmod +x ./node_modules/.bin/stylelint ./node_modules/.bin/htmlhint
 
-      # Run HTMLHint and capture only errors
-      - name: Run HTMLHint and capture errors
+      # Run Stylelint and capture errors
+      - name: Run Stylelint for CSS
+        id: lint-css
+        run: |
+          echo "Running Stylelint..."
+          npx stylelint "**/*.css" | tee stylelint_output.txt || true
+
+          errors=$(grep -E "error" stylelint_output.txt || true)
+
+          if [ -z "$errors" ]; then
+            echo "No CSS errors found."
+            echo "css_errors=None" >> $GITHUB_ENV
+          else
+            echo "CSS Errors Found:"
+            echo "$errors"
+            echo "css_errors<<EOF" >> $GITHUB_ENV
+            echo "$errors" >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+          fi
+
+      # Run HTMLHint and capture errors
+      - name: Run HTMLHint (Excluding Vendor)
         id: lint-html
         run: |
           echo "Running HTMLHint..."
           npx htmlhint "**/*.html" --ignore "vendor/**" | tee htmlhint_output.txt || true
           
-          # Extract only lines that contain 'error' (case-insensitive)
-          errors=$(grep -i "error" htmlhint_output.txt || true)
+          # Extract only error messages (ignore summary lines)
+          errors=$(grep -E ".*\.html:[0-9]+:[0-9]+" htmlhint_output.txt || true)
 
           if [ -z "$errors" ]; then
             echo "No HTML errors found."
             echo "html_errors=None" >> $GITHUB_ENV
           else
-            echo "Errors found:"
+            echo "HTML Errors Found:"
             echo "$errors"
             echo "html_errors<<EOF" >> $GITHUB_ENV
             echo "$errors" >> $GITHUB_ENV
             echo "EOF" >> $GITHUB_ENV
           fi
 
-      # Send email notification with only the errors
+      # Send email notification with only error messages
       - name: Send Email Notification
         run: |
           echo "Sending email notification for repository update."
@@ -65,10 +86,18 @@ jobs:
           chmod 600 ~/.msmtprc          
 
           # Prepare email content
-          if [ "${{ env.html_errors }}" == "None" ]; then
-            message="Subject: Repository Update - Linting Report\n\nNo HTML errors found. Your code is clean! ✅"
+          message="Subject: Repository Update - Linting Report\n\n"
+
+          if [ "${{ env.css_errors }}" != "None" ]; then
+            message+="CSS Errors Found:\n\n${{ env.css_errors }}\n\n"
           else
-            message="Subject: Repository Update - Linting Report\n\nHTML Errors Found:\n\n${{ env.html_errors }}"
+            message+="No CSS errors found. ✅\n\n"
+          fi
+
+          if [ "${{ env.html_errors }}" != "None" ]; then
+            message+="HTML Errors Found:\n\n${{ env.html_errors }}\n\n"
+          else
+            message+="No HTML errors found. ✅\n\n"
           fi
 
           # Send the email
