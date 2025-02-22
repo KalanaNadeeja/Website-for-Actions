@@ -17,34 +17,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Install Stylelint
-        run: npm install stylelint --save-dev  
-
-      - name: Fix Stylelint Permissions
-        run: chmod +x ./node_modules/.bin/stylelint
-
-      # Run Stylelint
-      - name: Run Stylelint for CSS
-        run: npx stylelint "**/*.css" || true
-
       - name: Install HTMLHint
         run: npm install htmlhint --save-dev
 
       - name: Fix HTMLHint Permissions
         run: chmod +x ./node_modules/.bin/htmlhint
 
-      # # Run HTMLHint (Excluding Vendor)
-      # - name: Run HTMLHint
-      #   run: npx htmlhint "**/*.html" --ignore "vendor/**" || true
-        # Run HTMLHint and capture only errors
+      # Run HTMLHint and capture only errors
       - name: Run HTMLHint and capture errors
         id: lint-html
         run: |
           echo "Running HTMLHint..."
-          lint_output=$(npx htmlhint "**/*.html" --ignore "vendor/**" || true)
-        
+          npx htmlhint "**/*.html" --ignore "vendor/**" | tee htmlhint_output.txt || true
+          
           # Extract only lines that contain 'error' (case-insensitive)
-          errors=$(echo "$lint_output" | grep -i "error" || true)
+          errors=$(grep -i "error" htmlhint_output.txt || true)
 
           if [ -z "$errors" ]; then
             echo "No HTML errors found."
@@ -52,14 +39,12 @@ jobs:
           else
             echo "Errors found:"
             echo "$errors"
-            echo "html_errors=$errors" >> $GITHUB_ENV
+            echo "html_errors<<EOF" >> $GITHUB_ENV
+            echo "$errors" >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
           fi
 
-      # Run tests (not configured yet)     
-      - name: Run tests
-        run: echo "No tests configured yet"
-
-      # Send email notification
+      # Send email notification with only the errors
       - name: Send Email Notification
         run: |
           echo "Sending email notification for repository update."
@@ -87,4 +72,4 @@ jobs:
           fi
 
           # Send the email
-          echo -e "$message" | msmtp ${{ secrets.RECIPIENT_EMAIL }}
+          printf "$message" | msmtp ${{ secrets.RECIPIENT_EMAIL }}
