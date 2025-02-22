@@ -23,13 +23,9 @@ jobs:
       - name: Fix Stylelint Permissions
         run: chmod +x ./node_modules/.bin/stylelint
 
-      # Run Stylelint and capture output
+      # Run Stylelint
       - name: Run Stylelint for CSS
-        id: lint-css
-        run: |
-          lint_output=$(npx stylelint "**/*.css" || true)
-          echo "$lint_output"
-          echo "lint_css_output=$lint_output" >> $GITHUB_ENV
+        run: npx stylelint "**/*.css" || true
 
       - name: Install HTMLHint
         run: npm install htmlhint --save-dev
@@ -37,21 +33,33 @@ jobs:
       - name: Fix HTMLHint Permissions
         run: chmod +x ./node_modules/.bin/htmlhint
 
-      # Run HTMLHint and capture output
-      - name: Run HTMLHint (Excluding Vendor)
+      # # Run HTMLHint (Excluding Vendor)
+      # - name: Run HTMLHint
+      #   run: npx htmlhint "**/*.html" --ignore "vendor/**" || true
+        # Run HTMLHint and capture only errors
+      - name: Run HTMLHint and capture errors
         id: lint-html
         run: |
-          echo "Running HTMLHint on .html files"
-          npx htmlhint "**/*.html" --ignore "vendor/**" || true
-          
+          echo "Running HTMLHint..."
+          lint_output=$(npx htmlhint "**/*.html" --ignore "vendor/**" || true)
+        
+          # Extract only lines that contain 'error' (case-insensitive)
+          errors=$(echo "$lint_output" | grep -i "error" || true)
+
+          if [ -z "$errors" ]; then
+            echo "No HTML errors found."
+            echo "html_errors=None" >> $GITHUB_ENV
+          else
+            echo "Errors found:"
+            echo "$errors"
+            echo "html_errors=$errors" >> $GITHUB_ENV
+          fi
 
       # Run tests (not configured yet)     
       - name: Run tests
-        run: |
-          # Add commands for your testing tools here
-          echo "No tests configured yet"
+        run: echo "No tests configured yet"
 
-      # Send email notification with linting errors
+      # Send email notification
       - name: Send Email Notification
         run: |
           echo "Sending email notification for repository update."
@@ -71,5 +79,12 @@ jobs:
           # Set file permissions so that only the user can read/write
           chmod 600 ~/.msmtprc          
 
-          # Send an email notification with linting results
-          echo -e "Subject: Repository Update - Linting Report\n\nA repository update has occurred. Please check the linting results.\n\nCSS Linting:\n${{ env.lint_css_output }}\n\nHTML Linting:\n${{ env.lint_html_output }}" | msmtp ${{ secrets.RECIPIENT_EMAIL }}
+          # Prepare email content
+          if [ "${{ env.html_errors }}" == "None" ]; then
+            message="Subject: Repository Update - Linting Report\n\nNo HTML errors found. Your code is clean! ✅"
+          else
+            message="Subject: Repository Update - Linting Report\n\nHTML Errors Found:\n\n${{ env.html_errors }}"
+          fi
+
+          # Send the email
+          echo -e "$message" | msmtp ${{ secrets.RECIPIENT_EMAIL }}
