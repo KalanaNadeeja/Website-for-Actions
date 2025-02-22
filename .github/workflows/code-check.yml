@@ -31,35 +31,36 @@ jobs:
           echo "Running Stylelint..."
           npx stylelint "**/*.css" | tee stylelint_output.txt || true
 
-          errors=$(grep -E "error" stylelint_output.txt || true)
+          # Capture only error lines
+          errors=$(grep "error" stylelint_output.txt || true)
+
+          echo "Detected CSS Errors:"
+          echo "$errors"
 
           if [ -z "$errors" ]; then
-            echo "No CSS errors found."
             echo "css_errors=None" >> $GITHUB_ENV
           else
-            echo "CSS Errors Found:"
-            echo "$errors"
             echo "css_errors<<EOF" >> $GITHUB_ENV
             echo "$errors" >> $GITHUB_ENV
             echo "EOF" >> $GITHUB_ENV
           fi
 
-      # Run HTMLHint and capture errors
-      - name: Run HTMLHint (Excluding Vendor)
+      # Run HTMLHint and extract errors
+      - name: Run HTMLHint and Extract Errors
         id: lint-html
         run: |
           echo "Running HTMLHint..."
           npx htmlhint "**/*.html" --ignore "vendor/**" | tee htmlhint_output.txt || true
           
-          # Extract only error messages (ignore summary lines)
-          errors=$(grep -E ".*\.html:[0-9]+:[0-9]+" htmlhint_output.txt || true)
+          # Extract only lines containing actual errors
+          errors=$(grep -vE "Scanned [0-9]+ files|No errors found" htmlhint_output.txt || true)
+
+          echo "Detected HTML Errors:"
+          echo "$errors"
 
           if [ -z "$errors" ]; then
-            echo "No HTML errors found."
             echo "html_errors=None" >> $GITHUB_ENV
           else
-            echo "HTML Errors Found:"
-            echo "$errors"
             echo "html_errors<<EOF" >> $GITHUB_ENV
             echo "$errors" >> $GITHUB_ENV
             echo "EOF" >> $GITHUB_ENV
@@ -90,14 +91,14 @@ jobs:
 
           if [ "${{ env.css_errors }}" != "None" ]; then
             message+="CSS Errors Found:\n\n${{ env.css_errors }}\n\n"
-          else
-            message+="No CSS errors found. ✅\n\n"
           fi
 
           if [ "${{ env.html_errors }}" != "None" ]; then
             message+="HTML Errors Found:\n\n${{ env.html_errors }}\n\n"
-          else
-            message+="No HTML errors found. ✅\n\n"
+          fi
+
+          if [ -z "$message" ]; then
+            message="Subject: Repository Update - Linting Report\n\nNo linting errors found. ✅"
           fi
 
           # Send the email
