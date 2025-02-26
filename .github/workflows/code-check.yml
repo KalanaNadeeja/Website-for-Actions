@@ -45,15 +45,18 @@ jobs:
             echo "EOF" >> $GITHUB_ENV
           fi
 
-      # Run HTMLHint and extract errors
+      # Run HTMLHint and Extract Errors
       - name: Run HTMLHint and Extract Errors
         id: lint-html
         run: |
           echo "Running HTMLHint..."
           npx htmlhint "**/*.html" --ignore "vendor/**" | tee htmlhint_output.txt || true
           
-          # Extract only lines containing actual errors
-          errors=$(grep -vE "Scanned [0-9]+ files|No errors found" htmlhint_output.txt || true)
+          # Extract only error messages (clean output)
+          grep -E "^\s*/.*:\s*L[0-9]+" htmlhint_output.txt > formatted_html_errors.txt || true
+
+          # Read cleaned error list
+          errors=$(cat formatted_html_errors.txt || true)
 
           echo "Detected HTML Errors:"
           echo "$errors"
@@ -97,7 +100,7 @@ jobs:
             message+="HTML Errors Found:\n\n${{ env.html_errors }}\n\n"
           fi
 
-          if [ -z "$message" ]; then
+          if [[ "$message" == "Subject: Repository Update - Linting Report\n\n" ]]; then
             message="Subject: Repository Update - Linting Report\n\nNo linting errors found. ✅"
           fi
 
