@@ -91,13 +91,13 @@ jobs:
 
           if [ "${{ env.css_errors }}" != "None" ]; then
             message+="CSS Errors Found:\n"
-            message+=$(echo "${{ env.css_errors }}" | sed 's/^/ - /')  # Formatting as bullet points
+            message+=$(echo "${{ env.css_errors }}" | sed 's/^/ - /')  # Formatting CSS errors as bullet points
             message+="\n\n"
           fi
 
           if [ "${{ env.html_errors }}" != "None" ]; then
             message+="HTML Errors Found:\n"
-            message+=$(echo "${{ env.html_errors }}" | sed 's/^/ - /')  # Formatting as bullet points
+            message+=$(echo "${{ env.html_errors }}" | sed 's/^/ - /')  # Formatting HTML errors as bullet points
             message+="\n\n"
           fi
 
