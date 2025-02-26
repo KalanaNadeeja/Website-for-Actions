@@ -66,7 +66,7 @@ jobs:
             echo "EOF" >> $GITHUB_ENV
           fi
 
-      # Send email notification with only error messages
+      # Send email notification with only error messages in a bullet-point list
       - name: Send Email Notification
         run: |
           echo "Sending email notification for repository update."
@@ -86,15 +86,19 @@ jobs:
           # Set file permissions so that only the user can read/write
           chmod 600 ~/.msmtprc          
 
-          # Prepare email content with only errors listed
+          # Prepare email content with only errors listed in bullet points
           message=""
 
           if [ "${{ env.css_errors }}" != "None" ]; then
-            message+="CSS Errors Found:\n\n${{ env.css_errors }}\n\n"
+            message+="CSS Errors Found:\n\n"
+            message+=$(echo "${{ env.css_errors }}" | sed 's/^/ - /')  # Formatting as bullet points
+            message+="\n\n"
           fi
 
           if [ "${{ env.html_errors }}" != "None" ]; then
-            message+="HTML Errors Found:\n\n${{ env.html_errors }}\n\n"
+            message+="HTML Errors Found:\n\n"
+            message+=$(echo "${{ env.html_errors }}" | sed 's/^/ - /')  # Formatting as bullet points
+            message+="\n\n"
           fi
 
           if [ -z "$message" ]; then
