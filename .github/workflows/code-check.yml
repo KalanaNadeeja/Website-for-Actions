@@ -76,7 +76,16 @@ jobs:
       - name: Send Email Notification
         run: |
           echo "Sending email notification for repository update."
+          
+          # Install msmtp
           sudo apt-get install msmtp -y
+
+          # Check msmtp version to verify installation
+          msmtp --version
+
+          # Check msmtp config file for debugging
+          echo "Checking msmtp config file"
+          cat ~/.msmtprc
 
           # Configuring msmtp to send mail via SMTP
           echo "account default" > ~/.msmtprc
@@ -90,7 +99,7 @@ jobs:
           echo "logfile ~/.msmtp.log" >> ~/.msmtprc
 
           # Set file permissions
-          chmod 600 ~/.msmtprc          
+          chmod 600 ~/.msmtprc
 
           # Send email with formatted HTML errors if any
           if [ "${{ env.html_errors }}" != "None" ]; then
