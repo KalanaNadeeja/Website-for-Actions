@@ -31,8 +31,8 @@ jobs:
           echo "Running Stylelint..."
           npx stylelint "**/*.css" | tee stylelint_output.txt || true
 
-          # Capture only error lines and remove color codes (e.g., 90m, 39m)
-          css_errors=$(grep "error" stylelint_output.txt | sed -r 's/\x1b\[[0-9;]*m//g' || true)
+          # Capture only error lines (no color code removal)
+          css_errors=$(grep "error" stylelint_output.txt || true)
 
           echo "Detected CSS Errors:"
           echo "$css_errors"
