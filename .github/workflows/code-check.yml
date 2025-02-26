@@ -42,29 +42,27 @@ jobs:
         id: lint-html
         run: |
           echo "Running HTMLHint..."
-          npx htmlhint "**/*.html" --ignore "vendor/**" | tee htmlhint_output.txt || true
-          
+          # Run HTMLHint and capture output
+          lint_output=$(npx htmlhint "**/*.html" --ignore "vendor/**" || true)
+
           # Print full raw output for debugging
           echo "Full HTMLHint Output:"
-          cat htmlhint_output.txt
+          echo "$lint_output"
 
-          # Extract only error messages (clean output)
-          grep -E "^\s*/.*:\s*L[0-9]+" htmlhint_output.txt > formatted_html_errors.txt || true
+          # Extract only errors (using regex to capture errors)
+          errors=$(echo "$lint_output" | grep -E ".*L[0-9]+.*error.*" || true)
 
           # Print formatted errors
           echo "Formatted Errors:"
-          cat formatted_html_errors.txt
+          echo "$errors"
 
-          # Read cleaned error list
-          errors=$(cat formatted_html_errors.txt || true)
-
+          # Check if errors were found and add to the environment variable
           if [ -z "$errors" ]; then
             echo "No HTML errors found."
             echo "html_errors=None" >> $GITHUB_ENV
           else
             echo "HTML Errors Found:"
             echo "$errors"
-
             echo "html_errors<<EOF" >> $GITHUB_ENV
             echo "$errors" >> $GITHUB_ENV
             echo "EOF" >> $GITHUB_ENV
