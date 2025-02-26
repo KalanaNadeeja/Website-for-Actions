@@ -31,8 +31,8 @@ jobs:
           echo "Running Stylelint..."
           npx stylelint "**/*.css" | tee stylelint_output.txt || true
 
-          # Capture only error lines
-          errors=$(grep "error" stylelint_output.txt || true)
+          # Capture only error lines and remove color codes (e.g., 90m, 39m)
+          errors=$(grep "error" stylelint_output.txt | sed 's/\x1b\[[0-9;]*m//g' || true)
 
           echo "Detected CSS Errors:"
           echo "$errors"
@@ -52,8 +52,8 @@ jobs:
           echo "Running HTMLHint..."
           npx htmlhint "**/*.html" --ignore "vendor/**" | tee htmlhint_output.txt || true
           
-          # Extract only lines containing actual errors
-          errors=$(grep -vE "Scanned [0-9]+ files|No errors found" htmlhint_output.txt || true)
+          # Extract only lines containing actual errors and remove color codes
+          errors=$(grep -vE "Scanned [0-9]+ files|No errors found" htmlhint_output.txt | sed 's/\x1b\[[0-9;]*m//g' || true)
 
           echo "Detected HTML Errors:"
           echo "$errors"
@@ -66,7 +66,7 @@ jobs:
             echo "EOF" >> $GITHUB_ENV
           fi
 
-      # Send email notification with only error messages
+      # Send email notification with only error messages in a bullet-point list
       - name: Send Email Notification
         run: |
           echo "Sending email notification for repository update."
@@ -86,19 +86,23 @@ jobs:
           # Set file permissions so that only the user can read/write
           chmod 600 ~/.msmtprc          
 
-          # Prepare email content
+          # Prepare email content with only errors listed in bullet points
           message="Subject: Repository Update - Linting Report\n\n"
 
           if [ "${{ env.css_errors }}" != "None" ]; then
-            message+="CSS Errors Found:\n\n${{ env.css_errors }}\n\n"
+            message+="CSS Errors Found:\n"
+            message+=$(echo "${{ env.css_errors }}" | sed 's/^/ - /')  # Formatting as bullet points
+            message+="\n\n"
           fi
 
           if [ "${{ env.html_errors }}" != "None" ]; then
-            message+="HTML Errors Found:\n\n${{ env.html_errors }}\n\n"
+            message+="HTML Errors Found:\n"
+            message+=$(echo "${{ env.html_errors }}" | sed 's/^/ - /')  # Formatting as bullet points
+            message+="\n\n"
           fi
 
           if [ -z "$message" ]; then
-            message="Subject: Repository Update - Linting Report\n\nNo linting errors found. ✅"
+            message="No linting errors found. ✅"
           fi
 
           # Send the email
