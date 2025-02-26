@@ -86,8 +86,8 @@ jobs:
           # Set file permissions so that only the user can read/write
           chmod 600 ~/.msmtprc          
 
-          # Prepare email content with only errors listed
-          message=""
+          # Prepare email content
+          message="Subject: Repository Update - Linting Report\n\n"
 
           if [ "${{ env.css_errors }}" != "None" ]; then
             message+="CSS Errors Found:\n\n${{ env.css_errors }}\n\n"
@@ -98,7 +98,7 @@ jobs:
           fi
 
           if [ -z "$message" ]; then
-            message="No linting errors found. ✅"
+            message="Subject: Repository Update - Linting Report\n\nNo linting errors found. ✅"
           fi
 
           # Send the email
