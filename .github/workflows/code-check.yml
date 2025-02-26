@@ -18,61 +18,55 @@ jobs:
         uses: actions/checkout@v3
 
       # Install dependencies
-      - name: Install Stylelint
-        run: npm install stylelint --save-dev  
+      - name: Install Stylelint and HTMLHint
+        run: npm install stylelint htmlhint --save-dev
 
-      - name: Fix Stylelint Permissions
-        run: chmod +x ./node_modules/.bin/stylelint
+      - name: Fix Permissions for Linters
+        run: chmod +x ./node_modules/.bin/stylelint ./node_modules/.bin/htmlhint
 
-      - name: Install HTMLHint
-        run: npm install htmlhint --save-dev
-
-      - name: Fix HTMLHint Permissions
-        run: chmod +x ./node_modules/.bin/htmlhint
-
-      # Run Stylelint for CSS (kept in case you need it)
+      # Run Stylelint and capture errors
       - name: Run Stylelint for CSS
         id: lint-css
         run: |
-          lint_output=$(npx stylelint "**/*.css" || true)
-          echo "$lint_output"
+          echo "Running Stylelint..."
+          npx stylelint "**/*.css" | tee stylelint_output.txt || true
 
-      # Run HTMLHint and Extract Errors
+          # Capture only error lines
+          errors=$(grep "error" stylelint_output.txt || true)
+
+          echo "Detected CSS Errors:"
+          echo "$errors"
+
+          if [ -z "$errors" ]; then
+            echo "css_errors=None" >> $GITHUB_ENV
+          else
+            echo "css_errors<<EOF" >> $GITHUB_ENV
+            echo "$errors" >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+          fi
+
+      # Run HTMLHint and extract errors
       - name: Run HTMLHint and Extract Errors
         id: lint-html
         run: |
           echo "Running HTMLHint..."
-          # Run HTMLHint and capture output
-          lint_output=$(npx htmlhint "**/*.html" --ignore "vendor/**" || true)
+          npx htmlhint "**/*.html" --ignore "vendor/**" | tee htmlhint_output.txt || true
+          
+          # Extract only lines containing actual errors
+          errors=$(grep -vE "Scanned [0-9]+ files|No errors found" htmlhint_output.txt || true)
 
-          # Print full raw output for debugging
-          echo "Full HTMLHint Output:"
-          echo "$lint_output"
+          echo "Detected HTML Errors:"
+          echo "$errors"
 
-          # Extract only errors (using regex to capture errors)
-          errors=$(echo "$lint_output" | grep -E ".*L[0-9]+.*error.*" || true)
-
-          # Check if errors were found and format them as a list
           if [ -z "$errors" ]; then
-            echo "No HTML errors found."
             echo "html_errors=None" >> $GITHUB_ENV
           else
-            # Format the errors as a bullet-point list
-            formatted_errors=$(echo "$errors" | sed 's/^/ - /')
-
-            # Store formatted errors in environment variable
-            echo "HTML Errors Found:" >> $GITHUB_ENV
-            echo "$formatted_errors" >> $GITHUB_ENV
             echo "html_errors<<EOF" >> $GITHUB_ENV
-            echo "$formatted_errors" >> $GITHUB_ENV
+            echo "$errors" >> $GITHUB_ENV
             echo "EOF" >> $GITHUB_ENV
           fi
 
-      # Run tests (placeholder)
-      - name: Run tests
-        run: echo "No tests configured yet"
-
-      # Send email notification with HTML linting errors
+      # Send email notification with only error messages
       - name: Send Email Notification
         run: |
           echo "Sending email notification for repository update."
@@ -89,12 +83,23 @@ jobs:
           echo "tls on" >> ~/.msmtprc
           echo "logfile ~/.msmtp.log" >> ~/.msmtprc
 
-          # Set file permissions
+          # Set file permissions so that only the user can read/write
           chmod 600 ~/.msmtprc          
 
-          # Send email with formatted HTML errors if any
-          if [ "${{ env.html_errors }}" != "None" ]; then
-            echo -e "Subject: HTML Linting Report\n\nThe following HTML errors were found:\n\n${{ env.html_errors }}" | msmtp ${{ secrets.RECIPIENT_EMAIL }}
-          else
-            echo "No HTML errors found. ✅"
+          # Prepare email content
+          message="Subject: Repository Update - Linting Report\n\n"
+
+          if [ "${{ env.css_errors }}" != "None" ]; then
+            message+="CSS Errors Found:\n\n${{ env.css_errors }}\n\n"
           fi
+
+          if [ "${{ env.html_errors }}" != "None" ]; then
+            message+="HTML Errors Found:\n\n${{ env.html_errors }}\n\n"
+          fi
+
+          if [ -z "$message" ]; then
+            message="Subject: Repository Update - Linting Report\n\nNo linting errors found. ✅"
+          fi
+
+          # Send the email
+          printf "$message" | msmtp ${{ secrets.RECIPIENT_EMAIL }}
