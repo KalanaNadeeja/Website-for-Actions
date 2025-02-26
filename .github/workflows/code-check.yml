@@ -31,8 +31,8 @@ jobs:
           echo "Running Stylelint..."
           npx stylelint "**/*.css" | tee stylelint_output.txt || true
 
-          # Capture only error lines
-          errors=$(grep "error" stylelint_output.txt || true)
+          # Capture only error lines and remove color codes (e.g., 90m, 39m)
+          errors=$(grep "error" stylelint_output.txt | sed 's/\x1b\[[0-9;]*m//g' || true)
 
           echo "Detected CSS Errors:"
           echo "$errors"
@@ -52,8 +52,8 @@ jobs:
           echo "Running HTMLHint..."
           npx htmlhint "**/*.html" --ignore "vendor/**" | tee htmlhint_output.txt || true
           
-          # Extract only lines containing actual errors
-          errors=$(grep -vE "Scanned [0-9]+ files|No errors found" htmlhint_output.txt || true)
+          # Extract only lines containing actual errors and remove color codes
+          errors=$(grep -vE "Scanned [0-9]+ files|No errors found" htmlhint_output.txt | sed 's/\x1b\[[0-9;]*m//g' || true)
 
           echo "Detected HTML Errors:"
           echo "$errors"
