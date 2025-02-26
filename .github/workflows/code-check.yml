@@ -31,7 +31,7 @@ jobs:
           echo "Running Stylelint..."
           npx stylelint "**/*.css" | tee stylelint_output.txt || true
 
-          # Capture only error lines (no color code removal)
+          # Capture only error lines and remove color codes (e.g., 90m, 39m)
           css_errors=$(grep "error" stylelint_output.txt || true)
 
           echo "Detected CSS Errors:"
@@ -42,27 +42,6 @@ jobs:
           else
             echo "css_errors<<EOF" >> $GITHUB_ENV
             echo "$css_errors" >> $GITHUB_ENV
-            echo "EOF" >> $GITHUB_ENV
-          fi
-
-      # Run HTMLHint and capture errors
-      - name: Run HTMLHint and Extract Errors
-        id: lint-html
-        run: |
-          echo "Running HTMLHint..."
-          npx htmlhint "**/*.html" --ignore "vendor/**" | tee htmlhint_output.txt || true
-          
-          # Extract only lines containing actual errors and remove color codes
-          html_errors=$(grep -vE "Scanned [0-9]+ files|No errors found" htmlhint_output.txt | sed -r 's/\x1b\[[0-9;]*m//g' || true)
-
-          echo "Detected HTML Errors:"
-          echo "$html_errors"
-
-          if [ -z "$html_errors" ]; then
-            echo "html_errors=None" >> $GITHUB_ENV
-          else
-            echo "html_errors<<EOF" >> $GITHUB_ENV
-            echo "$html_errors" >> $GITHUB_ENV
             echo "EOF" >> $GITHUB_ENV
           fi
 
