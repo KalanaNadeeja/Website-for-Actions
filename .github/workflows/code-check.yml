@@ -37,7 +37,7 @@ jobs:
         id: lint-js
         run: |
           echo "Running ESLint..."
-          npx eslint "**/*.js" --ignore-pattern "vendor/**" --format stylish | tee eslint_output.txt || true
+          npx eslint "**/*.js" --ignore-pattern "vendor/**" --ignore-pattern "eslint.config.js --format stylish | tee eslint_output.txt || true
 
           js_errors=$(grep -E "error" eslint_output.txt || true)
 
