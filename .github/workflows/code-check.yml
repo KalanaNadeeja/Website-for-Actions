@@ -26,11 +26,31 @@ jobs:
           echo "Commit Author Email: $email"        
 
       # Install dependencies
-      - name: Install Stylelint and HTMLHint
-        run: npm install stylelint htmlhint --save-dev
+      - name: Install ESLint, Stylelint, and HTMLHint
+        run: npm install eslint stylelint htmlhint --save-dev
 
       - name: Fix Permissions for Linters
-        run: chmod +x ./node_modules/.bin/stylelint ./node_modules/.bin/htmlhint
+        run: chmod +x ./node_modules/.bin/eslint ./node_modules/.bin/stylelint ./node_modules/.bin/htmlhint
+
+      # Run ESLint for JavaScript
+      - name: Run ESLint for JavaScript
+        id: lint-js
+        run: |
+          echo "Running ESLint..."
+          npx eslint "**/*.js" --ignore "vendor/**" --format stylish | tee eslint_output.txt || true
+
+          js_errors=$(grep -E "error" eslint_output.txt || true)
+
+          echo "Detected JavaScript Errors:"
+          echo "$js_errors"
+
+          if [ -z "$js_errors" ]; then
+            echo "js_errors=None" >> $GITHUB_ENV
+          else
+            echo "js_errors<<EOF" >> $GITHUB_ENV
+            echo "$js_errors" >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+          fi
 
       # Run Stylelint and capture errors for CSS
       - name: Run Stylelint for CSS
@@ -97,12 +117,21 @@ jobs:
           # Prepare email content with both CSS and HTML errors listed in bullet points
           message="Subject: Repository Update - Linting Report\n\n"
 
+          # Check if any errors in JS were found
+          if [ "${{ env.js_errors }}" != "None" ]; then
+            message+="JavaScript Errors Found:\n"
+            message+=$(echo "${{ env.js_errors }}" | sed 's/^/ - /')
+            message+="\n\n"
+          fi
+
+          # Check if any errors in CSS were found
           if [ "${{ env.css_errors }}" != "None" ]; then
             message+="CSS Errors Found:\n"
             message+=$(echo "${{ env.css_errors }}" | sed 's/^/ - /')  # Formatting CSS errors as bullet points
             message+="\n\n"
           fi
 
+          # Check if any errors in HTML were found
           if [ "${{ env.html_errors }}" != "None" ]; then
             message+="HTML Errors Found:\n"
             message+=$(echo "${{ env.html_errors }}" | sed 's/^/ - /')  # Formatting HTML errors as bullet points
