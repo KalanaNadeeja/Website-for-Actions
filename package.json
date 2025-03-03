@@ -1,6 +1,7 @@
 {
   "name": "website-for-actions",
   "version": "1.0.0",
+  "type": "module",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -19,7 +20,7 @@
   "homepage": "https://github.com/KalanaNadeeja/Website-for-Actions#readme",
   "devDependencies": {
     "@eslint/js": "^9.19.0",
-    "eslint": "^9.19.0",
+    "eslint": "^9.21.0",
     "globals": "^15.14.0",
     "htmlhint": "^1.1.4",
     "stylelint": "^16.14.1",
