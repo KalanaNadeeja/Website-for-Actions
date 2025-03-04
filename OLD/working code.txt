@@ -17,35 +17,63 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # Fetch the email of the developer who pushed the commit
+      - name: Get Commit Author Email
+        id: get-email
+        run: |
+          email=$(git log -1 --pretty=format:'%ae')
+          echo "COMMIT_AUTHOR_EMAIL=$email" >> $GITHUB_ENV
+          echo "Commit Author Email: $email"        
+
       # Install dependencies
-      - name: Install Stylelint and HTMLHint
-        run: npm install stylelint htmlhint --save-dev
+      - name: Install ESLint, Stylelint, and HTMLHint
+        run: npm install eslint stylelint htmlhint --save-dev
 
       - name: Fix Permissions for Linters
-        run: chmod +x ./node_modules/.bin/stylelint ./node_modules/.bin/htmlhint
+        run: chmod +x ./node_modules/.bin/eslint ./node_modules/.bin/stylelint ./node_modules/.bin/htmlhint
 
-      # Run Stylelint and capture errors
+      # Run ESLint for JavaScript
+      - name: Run ESLint for JavaScript
+        id: lint-js
+        run: |
+          echo "Running ESLint..."
+          npx eslint "**/*.js" --ignore-pattern "vendor/**" --ignore-pattern "eslint.config.js" --format stylish | tee eslint_output.txt || true
+
+          js_errors=$(grep -E "error" eslint_output.txt || true)
+
+          echo "Detected JavaScript Errors:"
+          echo "$js_errors"
+
+          if [ -z "$js_errors" ]; then
+            echo "js_errors=None" >> $GITHUB_ENV
+          else
+            echo "js_errors<<EOF" >> $GITHUB_ENV
+            echo "$js_errors" >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+          fi
+
+      # Run Stylelint and capture errors for CSS
       - name: Run Stylelint for CSS
         id: lint-css
         run: |
           echo "Running Stylelint..."
           npx stylelint "**/*.css" | tee stylelint_output.txt || true
 
-          # Capture only error lines and remove color codes (e.g., 90m, 39m)
-          errors=$(grep "error" stylelint_output.txt | sed 's/\x1b\[[0-9;]*m//g' || true)
+          # Capture only error lines (no color code removal)
+          css_errors=$(grep "error" stylelint_output.txt || true)
 
           echo "Detected CSS Errors:"
-          echo "$errors"
+          echo "$css_errors"
 
-          if [ -z "$errors" ]; then
+          if [ -z "$css_errors" ]; then
             echo "css_errors=None" >> $GITHUB_ENV
           else
             echo "css_errors<<EOF" >> $GITHUB_ENV
-            echo "$errors" >> $GITHUB_ENV
+            echo "$css_errors" >> $GITHUB_ENV
             echo "EOF" >> $GITHUB_ENV
           fi
 
-      # Run HTMLHint and extract errors
+      # Run HTMLHint and capture errors
       - name: Run HTMLHint and Extract Errors
         id: lint-html
         run: |
@@ -53,20 +81,20 @@ jobs:
           npx htmlhint "**/*.html" --ignore "vendor/**" | tee htmlhint_output.txt || true
           
           # Extract only lines containing actual errors and remove color codes
-          errors=$(grep -vE "Scanned [0-9]+ files|No errors found" htmlhint_output.txt | sed 's/\x1b\[[0-9;]*m//g' || true)
+          html_errors=$(grep -vE "Scanned [0-9]+ files|No errors found" htmlhint_output.txt | sed -r 's/\x1b\[[0-9;]*m//g' || true)
 
           echo "Detected HTML Errors:"
-          echo "$errors"
+          echo "$html_errors"
 
-          if [ -z "$errors" ]; then
+          if [ -z "$html_errors" ]; then
             echo "html_errors=None" >> $GITHUB_ENV
           else
             echo "html_errors<<EOF" >> $GITHUB_ENV
-            echo "$errors" >> $GITHUB_ENV
+            echo "$html_errors" >> $GITHUB_ENV
             echo "EOF" >> $GITHUB_ENV
           fi
 
-      # Send email notification with only error messages in a bullet-point list
+      # Send email notification with both CSS and HTML errors
       - name: Send Email Notification
         run: |
           echo "Sending email notification for repository update."
@@ -79,25 +107,34 @@ jobs:
           echo "auth on" >> ~/.msmtprc
           echo "user ${{ secrets.SMTP_USER }}" >> ~/.msmtprc
           echo "password ${{ secrets.SMTP_PASSWORD }}" >> ~/.msmtprc
-          echo "from ${{ secrets.SMTP_FROM_EMAIL }}" >> ~/.msmtprc
+          echo "from ${{ env.COMMIT_AUTHOR_EMAIL }}" >> ~/.msmtprc
           echo "tls on" >> ~/.msmtprc
           echo "logfile ~/.msmtp.log" >> ~/.msmtprc
 
           # Set file permissions so that only the user can read/write
           chmod 600 ~/.msmtprc          
 
-          # Prepare email content with only errors listed in bullet points
+          # Prepare email content with both CSS and HTML errors listed in bullet points
           message="Subject: Repository Update - Linting Report\n\n"
 
-          if [ "${{ env.css_errors }}" != "None" ]; then
-            message+="CSS Errors Found:\n"
-            message+=$(echo "${{ env.css_errors }}" | sed 's/^/ - /')  # Formatting as bullet points
+          # Check if any errors in JS were found
+          if [ "${{ env.js_errors }}" != "None" ]; then
+            message+="JavaScript Errors Found:\n"
+            message+=$(echo "${{ env.js_errors }}" | sed 's/^/ - /')
             message+="\n\n"
           fi
 
+          # Check if any errors in CSS were found
+          if [ "${{ env.css_errors }}" != "None" ]; then
+            message+="CSS Errors Found:\n"
+            message+=$(echo "${{ env.css_errors }}" | sed 's/^/ - /')  # Formatting CSS errors as bullet points
+            message+="\n\n"
+          fi
+
+          # Check if any errors in HTML were found
           if [ "${{ env.html_errors }}" != "None" ]; then
             message+="HTML Errors Found:\n"
-            message+=$(echo "${{ env.html_errors }}" | sed 's/^/ - /')  # Formatting as bullet points
+            message+=$(echo "${{ env.html_errors }}" | sed 's/^/ - /')  # Formatting HTML errors as bullet points
             message+="\n\n"
           fi
 
@@ -107,3 +144,6 @@ jobs:
 
           # Send the email
           printf "$message" | msmtp ${{ secrets.RECIPIENT_EMAIL }}
+
+      - name: Debug CSS Errors
+        run: echo "${{ env.css_errors }}"
