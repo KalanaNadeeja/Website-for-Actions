@@ -1,0 +1,22 @@
+
+   /home/runner/work/Website-for-Actions/Website-for-Actions/new.html
+[37m      L3 |[90m<HEAD>[39m
+[37m          ^ [31mThe html element name of [ HEAD ] must be in lowercase. (tagname-lowercase)[39m
+[37m      L7 |[90m</HEAD>[39m
+[37m          ^ [31mThe html element name of [ HEAD ] must be in lowercase. (tagname-lowercase)[39m
+[37m      L11 |[90m</body>[39m
+[37m           ^ [31mTag must be paired, missing: [ </div> ], start tag match failed [ <div> ] on line 9. (tag-pair)[39m
+
+   /home/runner/work/Website-for-Actions/Website-for-Actions/Public/index.html
+[37m      L13 |[90m</body>[39m
+[37m           ^ [31mTag must be paired, missing: [ </a></div> ], start tag match failed [ <a href="test.html"> ] on line 12. (tag-pair)[39m
+
+   /home/runner/work/Website-for-Actions/Website-for-Actions/Public/test.html
+[37m      L3 |[90m  <Head> <!-- Uppercase 'Head' should trigger "tagname-lowercase" -->[39m
+[37m            ^ [31mThe html element name of [ Head ] must be in lowercase. (tagname-lowercase)[39m
+[37m      L5 |[90m  </Head>[39m
+[37m            ^ [31mThe html element name of [ Head ] must be in lowercase. (tagname-lowercase)[39m
+[37m      L8 |[90m    <h1 id="duplicate">Test</h1> <!-- Duplicate ID should trigger "id-unique" -->[39m
+[37m                 ^ [31mThe id value [ duplicate ] must be unique. (id-unique)[39m
+
+Scanned 3 files, found 7 errors in 3 files (14 ms)

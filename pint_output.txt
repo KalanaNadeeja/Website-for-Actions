@@ -1,0 +1,7 @@
+
+  ⨯
+
+  ──────────────────────────────────────────────────────────────────── Laravel  
+    FAIL   ............................................. 1 file, 1 style issue  
+  ⨯ Public/index.php               single_quote, concat_space, braces_position  
+
