@@ -37,7 +37,7 @@ jobs:
         id: lint-js
         run: |
           echo "Running ESLint..."
-          npx eslint "**/*.js" --ignore-pattern "vendor/**" --ignore-pattern "eslint.config.js" --format stylish | tee eslint_output.txt || true
+          npx eslint "**/*.{js,jsx,ts,tsx}" --ignore-pattern "vendor/**" --ignore-pattern "eslint.config.js" --format stylish | tee eslint_output.txt || true
 
           js_errors=$(grep -E "error" eslint_output.txt || true)
 
@@ -52,15 +52,15 @@ jobs:
             echo "EOF" >> $GITHUB_ENV
           fi
 
-      # Run Stylelint and capture errors for CSS
+      # Run Stylelint and capture errors for CSS (Updated)
       - name: Run Stylelint for CSS
         id: lint-css
         run: |
           echo "Running Stylelint..."
-          npx stylelint "**/*.css" | tee stylelint_output.txt || true
+          npx stylelint "**/*.css" --formatter json > stylelint_output.json || true
 
-          # Capture only error lines (no color code removal)
-          css_errors=$(grep "error" stylelint_output.txt || true)
+          # Extract errors using jq
+          css_errors=$(jq -r 'map("\(.source):\n" + (.warnings | map("  - [\(.severity)] Line \(.line), Col \(.column): \(.text)") | join("\n"))) | join("\n\n")' stylelint_output.json || true)
 
           echo "Detected CSS Errors:"
           echo "$css_errors"
