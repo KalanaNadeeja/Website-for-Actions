@@ -31,15 +31,15 @@ jobs:
 
       # Run ESLint for JS/TS
       - name: Run ESLint
-        run: npx eslint "**/*.{js,jsx,ts,tsx}" --ignore-pattern "vendor/**" --format stylish || true
+        run: npx eslint "**/*.{js,jsx,ts,tsx}" --ignore-pattern "vendor/**" --format stylish | tee eslint_output.txt || true
 
       # Run Stylelint for CSS
       - name: Run Stylelint
-        run: npx stylelint "**/*.css" --formatter json || true
+        run: npx stylelint "**/*.css" --formatter json | tee stylelint_output.json || true
 
       # Run HTMLHint for HTML
       - name: Run HTMLHint
-        run: npx htmlhint "**/*.html" --ignore "vendor/**" || true
+        run: npx htmlhint "**/*.html" --ignore "vendor/**" | tee htmlhint_output.txt || true
 
       # Set up PHP for Laravel Pint & PHPUnit
       - name: Setup PHP
@@ -53,6 +53,14 @@ jobs:
       - name: Install Composer Dependencies
         run: composer install --no-progress --prefer-dist --optimize-autoloader
 
+      # Install Enlightn Security Checker
+      - name: Install Enlightn Security Checker
+        run: composer require enlightn/security-checker --dev
+
+      # Run Security Vulnerability Check
+      - name: Run Security Checker
+        run: ./vendor/bin/security-checker security:check | tee security_output.txt || true
+
       # Set up Laravel Environment & SQLite Database for Testing
       - name: Setup Laravel Environment
         run: |
@@ -61,6 +69,7 @@ jobs:
           mkdir -p database
           touch database/database.sqlite
           php artisan migrate --env=testing --force
+        continue-on-error: true # If environment setup fails, continue
 
       # Install Laravel Pint
       - name: Install Pint
@@ -70,15 +79,15 @@ jobs:
       - name: Add Composer Global Bin to Path
         run: echo "$HOME/.composer/vendor/bin" >> $GITHUB_PATH
 
-      # Run Laravel Pint
+      # Run Laravel Pint (Runs even if environment setup fails)
       - name: Run Laravel Pint
-        run: pint --test || true
+        run: pint --test | tee pint_output.txt || true
 
       # Run PHPUnit Tests
       - name: Run PHPUnit Tests
-        run: php artisan test --testsuite=Feature --testsuite=Unit || true
+        run: php artisan test --testsuite=Feature --testsuite=Unit | tee phpunit_output.txt || true
 
-      # Commit and Push Pint Fixes (if any)
+      # Commit and Push Laravel Pint Fixes (if any)
       - name: Commit and Push Laravel Pint Fixes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
@@ -125,6 +134,10 @@ jobs:
 
           if grep -q "FAILURES" phpunit_output.txt; then
             message+="⚡ PHPUnit Test Failures:\n$(cat phpunit_output.txt)\n\n"
+          fi
+
+          if [ -s security_output.txt ]; then
+            message+="🔒 Vulnerabilities Found:\n$(cat security_output.txt)\n\n"
           fi
 
           printf "$message" | msmtp ${{ secrets.RECIPIENT_EMAIL }}
