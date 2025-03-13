@@ -2,6 +2,28 @@
 /home/runner/work/Website-for-Actions/Website-for-Actions/Public/script.js
   2:1  error  Expected indentation of 2 spaces but found 4  indent
 
-✖ 1 problem (1 error, 0 warnings)
-  1 error and 0 warnings potentially fixable with the `--fix` option.
+/home/runner/work/Website-for-Actions/Website-for-Actions/eslint.config.js
+   2:1  error  Expected indentation of 2 spaces but found 4   indent
+   3:1  error  Expected indentation of 4 spaces but found 6   indent
+   4:1  error  Expected indentation of 4 spaces but found 6   indent
+   5:1  error  Expected indentation of 6 spaces but found 8   indent
+   6:1  error  Expected indentation of 6 spaces but found 8   indent
+   7:1  error  Expected indentation of 6 spaces but found 8   indent
+   8:1  error  Expected indentation of 8 spaces but found 10  indent
+   9:1  error  Expected indentation of 8 spaces but found 10  indent
+  10:1  error  Expected indentation of 8 spaces but found 10  indent
+  11:1  error  Expected indentation of 6 spaces but found 8   indent
+  12:1  error  Expected indentation of 4 spaces but found 6   indent
+  13:1  error  Expected indentation of 4 spaces but found 6   indent
+  14:1  error  Expected indentation of 6 spaces but found 8   indent
+  15:1  error  Expected indentation of 6 spaces but found 8   indent
+  16:1  error  Expected indentation of 6 spaces but found 8   indent
+  17:1  error  Expected indentation of 6 spaces but found 8   indent
+  18:1  error  Expected indentation of 6 spaces but found 8   indent
+  19:1  error  Expected indentation of 4 spaces but found 6   indent
+  20:1  error  Expected indentation of 2 spaces but found 4   indent
+  21:1  error  Expected indentation of 0 spaces but found 2   indent
+
+✖ 21 problems (21 errors, 0 warnings)
+  21 errors and 0 warnings potentially fixable with the `--fix` option.
 
