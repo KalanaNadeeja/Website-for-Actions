@@ -40,38 +40,12 @@ jobs:
           echo "Running ESLint..."
           npx eslint "**/*.{js,jsx,ts,tsx}" --ignore-pattern "vendor/**" --ignore-pattern "eslint.config.js" --format stylish | tee eslint_output.txt || true
 
-          js_errors=$(grep -E "error" eslint_output.txt || true)
-
-          echo "Detected JavaScript Errors:"
-          echo "$js_errors"
-
-          if [ -z "$js_errors" ]; then
-            echo "js_errors=None" >> $GITHUB_ENV
-          else
-            echo "js_errors<<EOF" >> $GITHUB_ENV
-            echo "$js_errors" >> $GITHUB_ENV
-            echo "EOF" >> $GITHUB_ENV
-          fi
-
       # Run Stylelint for CSS
       - name: Run Stylelint
         id: lint-css
         run: |
           echo "Running Stylelint..."
           npx stylelint "**/*.css" --formatter json > stylelint_output.json || true
-
-          css_errors=$(jq -r 'map("\(.source):\n" + (.warnings | map("  - [\(.severity)] Line \(.line), Col \(.column): \(.text)") | join("\n"))) | join("\n\n")' stylelint_output.json || true)
-
-          echo "Detected CSS Errors:"
-          echo "$css_errors"
-
-          if [ -z "$css_errors" ]; then
-            echo "css_errors=None" >> $GITHUB_ENV
-          else
-            echo "css_errors<<EOF" >> $GITHUB_ENV
-            echo "$css_errors" >> $GITHUB_ENV
-            echo "EOF" >> $GITHUB_ENV
-          fi
 
       # Run HTMLHint
       - name: Run HTMLHint
@@ -80,26 +54,23 @@ jobs:
           echo "Running HTMLHint..."
           npx htmlhint "**/*.html" --ignore "vendor/**" | tee htmlhint_output.txt || true
 
-          html_errors=$(grep -vE "Scanned [0-9]+ files|No errors found" htmlhint_output.txt | sed -r 's/\x1b\[[0-9;]*m//g' || true)
-
-          echo "Detected HTML Errors:"
-          echo "$html_errors"
-
-          if [ -z "$html_errors" ]; then
-            echo "html_errors=None" >> $GITHUB_ENV
-          else
-            echo "html_errors<<EOF" >> $GITHUB_ENV
-            echo "$html_errors" >> $GITHUB_ENV
-            echo "EOF" >> $GITHUB_ENV
-          fi
-
-      # Set up PHP for Laravel Pint
+      # Set up PHP for Laravel Pint & PHPUnit
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: 8.4
-          extensions: json, dom, curl, libxml, mbstring
+          extensions: json, dom, curl, libxml, mbstring, sqlite3, pdo, pdo_sqlite
           coverage: none
+
+      # Install Composer Dependencies
+      - name: Install Dependencies
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
+
+      # Setup SQLite Database for Testing
+      - name: Setup Test Database
+        run: |
+          touch database/database.sqlite
+          php artisan migrate --env=testing --force
 
       # Install Laravel Pint
       - name: Install Pint
@@ -112,22 +83,12 @@ jobs:
       # Run Laravel Pint
       - name: Run Laravel Pint
         id: lint-php
-        run: |
-          echo "Running Laravel Pint..."
-          pint --test | tee pint_output.txt || true
+        run: pint --test | tee pint_output.txt || true
 
-          php_errors=$(grep -E "ERROR|WARNING|FIXABLE" pint_output.txt || true)
-
-          echo "Detected PHP Errors:"
-          echo "$php_errors"
-
-          if [ -z "$php_errors" ]; then
-            echo "php_errors=None" >> $GITHUB_ENV
-          else
-            echo "php_errors<<EOF" >> $GITHUB_ENV
-            echo "$php_errors" >> $GITHUB_ENV
-            echo "EOF" >> $GITHUB_ENV
-          fi
+      # Run PHPUnit Tests
+      - name: Run PHPUnit Tests
+        id: phpunit
+        run: php artisan test --testsuite=Feature --testsuite=Unit | tee phpunit_output.txt || true
 
       # Commit and Push Changes (Laravel Pint Fixes)
       - name: Commit and Push Changes
@@ -138,9 +99,9 @@ jobs:
 
       # Send Email Notification if Errors are Found
       - name: Send Email Notification
-        if: env.js_errors != 'None' || env.css_errors != 'None' || env.html_errors != 'None' || env.php_errors != 'None'
+        if: failure()
         run: |
-          echo "Sending email notification for linting errors..."
+          echo "Sending email notification for errors..."
           sudo apt-get install msmtp -y
 
           # Configure msmtp
@@ -153,46 +114,31 @@ jobs:
           echo "from ${{ env.COMMIT_AUTHOR_EMAIL }}" >> ~/.msmtprc
           echo "tls on" >> ~/.msmtprc
           echo "logfile ~/.msmtp.log" >> ~/.msmtprc
-
           chmod 600 ~/.msmtprc
 
           # Prepare email content
-          message="Subject: Code Check - Linting Report\n\n"
+          message="Subject: Code Check - Linting & Test Report\n\n"
 
-          if [ "${{ env.js_errors }}" != "None" ]; then
-            message+="JavaScript Errors Found:\n"
-            message+=$(echo "${{ env.js_errors }}" | sed 's/^/ - /')
-            message+="\n\n"
+          message+="🔥 Laravel CI Report 🔥\n\n"
+
+          if grep -q "ERROR" eslint_output.txt; then
+            message+="🛑 JavaScript Errors:\n$(cat eslint_output.txt | sed 's/^/ - /')\n\n"
           fi
 
-          if [ "${{ env.css_errors }}" != "None" ]; then
-            message+="CSS Errors Found:\n"
-            message+=$(echo "${{ env.css_errors }}" | sed 's/^/ - /')
-            message+="\n\n"
+          if grep -q "ERROR" stylelint_output.json; then
+            message+="🎨 CSS Errors:\n$(jq . stylelint_output.json)\n\n"
           fi
 
-          if [ "${{ env.html_errors }}" != "None" ]; then
-            message+="HTML Errors Found:\n"
-            message+=$(echo "${{ env.html_errors }}" | sed 's/^/ - /')
-            message+="\n\n"
+          if grep -q "ERROR" htmlhint_output.txt; then
+            message+="📄 HTML Errors:\n$(cat htmlhint_output.txt)\n\n"
           fi
 
-          if [ "${{ env.php_errors }}" != "None" ]; then
-            message+="PHP Errors Found:\n"
-            message+=$(echo "${{ env.php_errors }}" | sed 's/^/ - /')
-            message+="\n\n"
+          if grep -q "ERROR" pint_output.txt; then
+            message+="🐘 PHP Code Style Issues:\n$(cat pint_output.txt)\n\n"
           fi
 
-          if [ -z "$message" ]; then
-            message="No linting errors found. ✅"
+          if grep -q "FAILURES" phpunit_output.txt; then
+            message+="⚡ PHPUnit Test Failures:\n$(cat phpunit_output.txt)\n\n"
           fi
 
           printf "$message" | msmtp ${{ secrets.RECIPIENT_EMAIL }}
-
-      # Debug All Errors
-      - name: Debug Errors
-        run: |
-          echo "JavaScript Errors: ${{ env.js_errors }}"
-          echo "CSS Errors: ${{ env.css_errors }}"
-          echo "HTML Errors: ${{ env.html_errors }}"
-          echo "PHP Errors: ${{ env.php_errors }}"
