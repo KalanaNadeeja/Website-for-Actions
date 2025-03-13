@@ -17,7 +17,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Fetch the email of the developer who pushed the commit
+      # Get Commit Author Email
       - name: Get Commit Author Email
         id: get-email
         run: |
@@ -25,34 +25,21 @@ jobs:
           echo "COMMIT_AUTHOR_EMAIL=$email" >> $GITHUB_ENV
           echo "Commit Author Email: $email"
 
-      # Install Node.js dependencies
-      - name: Install ESLint, Stylelint, and HTMLHint
+      # Install Node.js Dependencies (ESLint, Stylelint, HTMLHint)
+      - name: Install Node.js Lint Tools
         run: npm install eslint stylelint htmlhint --save-dev
 
-      # Fix Permissions for Linters
-      - name: Fix Permissions for Linters
-        run: chmod +x ./node_modules/.bin/eslint ./node_modules/.bin/stylelint ./node_modules/.bin/htmlhint
-
-      # Run ESLint for JavaScript/TypeScript
+      # Run ESLint for JS/TS
       - name: Run ESLint
-        id: lint-js
-        run: |
-          echo "Running ESLint..."
-          npx eslint "**/*.{js,jsx,ts,tsx}" --ignore-pattern "vendor/**" --ignore-pattern "eslint.config.js" --format stylish | tee eslint_output.txt || true
+        run: npx eslint "**/*.{js,jsx,ts,tsx}" --ignore-pattern "vendor/**" --format stylish || true
 
       # Run Stylelint for CSS
       - name: Run Stylelint
-        id: lint-css
-        run: |
-          echo "Running Stylelint..."
-          npx stylelint "**/*.css" --formatter json > stylelint_output.json || true
+        run: npx stylelint "**/*.css" --formatter json || true
 
-      # Run HTMLHint
+      # Run HTMLHint for HTML
       - name: Run HTMLHint
-        id: lint-html
-        run: |
-          echo "Running HTMLHint..."
-          npx htmlhint "**/*.html" --ignore "vendor/**" | tee htmlhint_output.txt || true
+        run: npx htmlhint "**/*.html" --ignore "vendor/**" || true
 
       # Set up PHP for Laravel Pint & PHPUnit
       - name: Setup PHP
@@ -63,17 +50,14 @@ jobs:
           coverage: none
 
       # Install Composer Dependencies
-      - name: Install Dependencies
-        run: composer install --no-progress --prefer-dist --optimize-autoloader
-      
-      # Install PHP dependencies
       - name: Install Composer Dependencies
-        run: composer install --no-scripts --no-interaction --prefer-dist
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
 
-
-      # Setup SQLite Database for Testing
-      - name: Setup Test Database
+      # Set up Laravel Environment & SQLite Database for Testing
+      - name: Setup Laravel Environment
         run: |
+          cp .env.example .env
+          php artisan key:generate
           mkdir -p database
           touch database/database.sqlite
           php artisan migrate --env=testing --force
@@ -88,16 +72,14 @@ jobs:
 
       # Run Laravel Pint
       - name: Run Laravel Pint
-        id: lint-php
-        run: pint --test | tee pint_output.txt || true
+        run: pint --test || true
 
       # Run PHPUnit Tests
       - name: Run PHPUnit Tests
-        id: phpunit
-        run: php artisan test --testsuite=Feature --testsuite=Unit | tee phpunit_output.txt || true
+        run: php artisan test --testsuite=Feature --testsuite=Unit || true
 
-      # Commit and Push Changes (Laravel Pint Fixes)
-      - name: Commit and Push Changes
+      # Commit and Push Pint Fixes (if any)
+      - name: Commit and Push Laravel Pint Fixes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Apply Pint fixes"
@@ -123,12 +105,10 @@ jobs:
           chmod 600 ~/.msmtprc
 
           # Prepare email content
-          message="Subject: Code Check - Linting & Test Report\n\n"
-
-          message+="🔥 Laravel CI Report 🔥\n\n"
+          message="🔥 Laravel CI Report 🔥\n\n"
 
           if grep -q "ERROR" eslint_output.txt; then
-            message+="🛑 JavaScript Errors:\n$(cat eslint_output.txt | sed 's/^/ - /')\n\n"
+            message+="🛑 JavaScript Errors:\n$(cat eslint_output.txt)\n\n"
           fi
 
           if grep -q "ERROR" stylelint_output.json; then
