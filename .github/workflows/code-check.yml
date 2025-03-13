@@ -69,6 +69,7 @@ jobs:
       # Setup SQLite Database for Testing
       - name: Setup Test Database
         run: |
+          mkdir -p database
           touch database/database.sqlite
           php artisan migrate --env=testing --force
 
