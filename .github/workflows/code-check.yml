@@ -65,6 +65,11 @@ jobs:
       # Install Composer Dependencies
       - name: Install Dependencies
         run: composer install --no-progress --prefer-dist --optimize-autoloader
+      
+      # Install PHP dependencies
+      - name: Install Composer Dependencies
+        run: composer install --no-scripts --no-interaction --prefer-dist
+
 
       # Setup SQLite Database for Testing
       - name: Setup Test Database
