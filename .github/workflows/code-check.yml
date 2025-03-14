@@ -87,17 +87,25 @@ jobs:
       - name: Run PHPUnit Tests
         run: php artisan test --testsuite=Feature --testsuite=Unit | tee phpunit_output.txt || true
 
-      # Pull the latest changes from main (Fix for non-fast-forward error)
+      # 🛑 Add and Commit Laravel Pint fixes (if any) before pulling to avoid non-fast-forward error
+      - name: Commit Pint Fixes Before Pulling
+        run: |
+          git config --global user.email "ci-bot@github.com"
+          git config --global user.name "GitHub Actions Bot"
+          git add .
+          git commit -m "Apply Pint Fixes" || echo "No changes to commit"
+
+      # 🚀 Pull the latest changes from main with rebase
       - name: Pull Latest Changes from Main
         run: |
           git pull origin main --rebase
 
-      # Commit and Push Laravel Pint Fixes
+      # ✅ Push Laravel Pint Fixes (if any)
       - name: Commit and Push Laravel Pint Fixes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Apply Pint fixes"
-          branch: ${{ github.ref }}
+          branch: main
 
       # Send Email Notification if Errors are Found
       - name: Send Email Notification
