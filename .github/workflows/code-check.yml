@@ -29,17 +29,17 @@ jobs:
       - name: Install Node.js Lint Tools
         run: npm install eslint stylelint htmlhint --save-dev
 
-      # Run ESLint for JS/TS
+      # Run ESLint for JS/TS (Exclude node_modules and vendor)
       - name: Run ESLint
-        run: npx eslint "**/*.{js,jsx,ts,tsx}" --ignore-pattern "vendor/**" --format stylish | tee eslint_output.txt || true
+        run: npx eslint . --ext .js,.jsx,.ts,.tsx --ignore-pattern "node_modules/**" --ignore-pattern "vendor/**" --format stylish | tee eslint_output.txt || true
 
-      # Run Stylelint for CSS
+      # Run Stylelint for CSS (Exclude node_modules and vendor)
       - name: Run Stylelint
-        run: npx stylelint "**/*.css" --formatter json | tee stylelint_output.json || true
+        run: npx stylelint "**/*.css" --ignore-path ".gitignore" --allow-empty-input | tee stylelint_output.json || true
 
-      # Run HTMLHint for HTML
+      # Run HTMLHint for HTML (Exclude node_modules and vendor)
       - name: Run HTMLHint
-        run: npx htmlhint "**/*.html" --ignore "vendor/**" | tee htmlhint_output.txt || true
+        run: npx htmlhint "**/*.html" --ignore "node_modules/**" --ignore "vendor/**" | tee htmlhint_output.txt || true
 
       # Set up PHP for Laravel Pint & PHPUnit
       - name: Setup PHP
@@ -79,9 +79,9 @@ jobs:
       - name: Add Composer Global Bin to Path
         run: echo "$HOME/.composer/vendor/bin" >> $GITHUB_PATH
 
-      # Run Laravel Pint (Runs even if environment setup fails)
+      # Run Laravel Pint (Exclude node_modules and vendor folders)
       - name: Run Laravel Pint
-        run: pint --test | tee pint_output.txt || true
+        run: pint --test --config pint.json | tee pint_output.txt || true
 
       # Run PHPUnit Tests
       - name: Run PHPUnit Tests
