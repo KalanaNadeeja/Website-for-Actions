@@ -87,7 +87,42 @@ jobs:
       - name: Run PHPUnit Tests
         run: php artisan test --testsuite=Feature --testsuite=Unit | tee phpunit_output.txt || true
 
-      # 🛑 Add and Commit Laravel Pint fixes (if any) before pulling to avoid non-fast-forward error
+      # 🛑 Check for Errors Manually (Force the job to fail if any errors are found)
+      - name: Check for Errors in Outputs
+        run: |
+          set -e # Stop the script if any error occurs
+
+          if grep -q "ERROR" eslint_output.txt; then
+            echo "JavaScript Lint Errors Found!"
+            exit 1
+          fi
+
+          if grep -q "ERROR" stylelint_output.json; then
+            echo "CSS Lint Errors Found!"
+            exit 1
+          fi
+
+          if grep -q "ERROR" htmlhint_output.txt; then
+            echo "HTML Lint Errors Found!"
+            exit 1
+          fi
+
+          if grep -q "ERROR" pint_output.txt; then
+            echo "Laravel Pint Issues Found!"
+            exit 1
+          fi
+
+          if grep -q "FAILURES" phpunit_output.txt; then
+            echo "PHPUnit Test Failures Found!"
+            exit 1
+          fi
+
+          if [ -s security_output.txt ]; then
+            echo "Security Vulnerabilities Found!"
+            exit 1
+          fi
+
+      # ✅ Commit Laravel Pint Fixes (if any)
       - name: Commit Pint Fixes Before Pulling
         run: |
           git config --global user.email "ci-bot@github.com"
@@ -107,9 +142,9 @@ jobs:
           commit_message: "Apply Pint fixes"
           branch: main
 
-      # Send Email Notification if Errors are Found
+      # 📩 Send Email Notification if Errors Are Found
       - name: Send Email Notification
-        if: failure()
+        if: always()
         run: |
           echo "Sending email notification for errors..."
           sudo apt-get install msmtp -y
