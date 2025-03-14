@@ -25,7 +25,7 @@ jobs:
           echo "COMMIT_AUTHOR_EMAIL=$email" >> $GITHUB_ENV
           echo "Commit Author Email: $email"
 
-      # Install Node.js Dependencies (ESLint, Stylelint, HTMLHint)
+      # Install Node.js Lint Tools (ESLint, Stylelint, HTMLHint)
       - name: Install Node.js Lint Tools
         run: npm install eslint stylelint htmlhint --save-dev
 
@@ -53,33 +53,7 @@ jobs:
       - name: Install Composer Dependencies
         run: composer install --no-progress --prefer-dist --optimize-autoloader
 
-      # Install Enlightn Security Checker
-      - name: Install Enlightn Security Checker
-        run: composer require enlightn/security-checker --dev
-
-      # Run Security Vulnerability Check
-      - name: Run Security Checker
-        run: ./vendor/bin/security-checker security:check | tee security_output.txt || true
-
-      # Set up Laravel Environment & SQLite Database for Testing
-      - name: Setup Laravel Environment
-        run: |
-          cp .env.example .env
-          php artisan key:generate
-          mkdir -p database
-          touch database/database.sqlite
-          php artisan migrate --env=testing --force
-        continue-on-error: true # If environment setup fails, continue
-
-      # Install Laravel Pint
-      - name: Install Pint
-        run: composer global require laravel/pint
-
-      # Add Composer Global Bin to Path
-      - name: Add Composer Global Bin to Path
-        run: echo "$HOME/.composer/vendor/bin" >> $GITHUB_PATH
-
-      # Run Laravel Pint (Exclude node_modules and vendor folders)
+      # Run Laravel Pint
       - name: Run Laravel Pint
         run: pint --test --config pint.json | tee pint_output.txt || true
 
@@ -87,62 +61,11 @@ jobs:
       - name: Run PHPUnit Tests
         run: php artisan test --testsuite=Feature --testsuite=Unit | tee phpunit_output.txt || true
 
-      # 🛑 Check for Errors Manually (Force the job to fail if any errors are found)
-      - name: Check for Errors in Outputs
-        run: |
-          set -e # Stop the script if any error occurs
+      # Run Security Checker
+      - name: Run Security Checker
+        run: ./vendor/bin/security-checker security:check | tee security_output.txt || true
 
-          if grep -q "ERROR" eslint_output.txt; then
-            echo "JavaScript Lint Errors Found!"
-            exit 1
-          fi
-
-          if grep -q "ERROR" stylelint_output.json; then
-            echo "CSS Lint Errors Found!"
-            exit 1
-          fi
-
-          if grep -q "ERROR" htmlhint_output.txt; then
-            echo "HTML Lint Errors Found!"
-            exit 1
-          fi
-
-          if grep -q "ERROR" pint_output.txt; then
-            echo "Laravel Pint Issues Found!"
-            exit 1
-          fi
-
-          if grep -q "FAILURES" phpunit_output.txt; then
-            echo "PHPUnit Test Failures Found!"
-            exit 1
-          fi
-
-          if [ -s security_output.txt ]; then
-            echo "Security Vulnerabilities Found!"
-            exit 1
-          fi
-
-      # ✅ Commit Laravel Pint Fixes (if any)
-      - name: Commit Pint Fixes Before Pulling
-        run: |
-          git config --global user.email "ci-bot@github.com"
-          git config --global user.name "GitHub Actions Bot"
-          git add .
-          git commit -m "Apply Pint Fixes" || echo "No changes to commit"
-
-      # 🚀 Pull the latest changes from main with rebase
-      - name: Pull Latest Changes from Main
-        run: |
-          git pull origin main --rebase
-
-      # ✅ Push Laravel Pint Fixes (if any)
-      - name: Commit and Push Laravel Pint Fixes
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "Apply Pint fixes"
-          branch: main
-
-      # 📩 Send Email Notification if Errors Are Found
+      # 📩 Send Email Notification if Any Errors Are Found
       - name: Send Email Notification
         if: always()
         run: |
@@ -161,31 +84,36 @@ jobs:
           echo "logfile ~/.msmtp.log" >> ~/.msmtprc
           chmod 600 ~/.msmtprc
 
-          # Prepare email content
-          message="🔥 Laravel CI Report 🔥\n\n"
+          # Prepare Email Content
+          message="<h1>🔥 Laravel CI Report 🔥</h1><br>"
 
-          if grep -q "ERROR" eslint_output.txt; then
-            message+="🛑 JavaScript Errors:\n$(cat eslint_output.txt)\n\n"
+          if [ -s eslint_output.txt ]; then
+            message+="<h3>🛑 JavaScript Lint Errors:</h3><pre>$(cat eslint_output.txt)</pre><br>"
           fi
 
-          if grep -q "ERROR" stylelint_output.json; then
-            message+="🎨 CSS Errors:\n$(jq . stylelint_output.json)\n\n"
+          if [ -s stylelint_output.json ]; then
+            message+="<h3>🎨 CSS Lint Errors:</h3><pre>$(cat stylelint_output.json)</pre><br>"
           fi
 
-          if grep -q "ERROR" htmlhint_output.txt; then
-            message+="📄 HTML Errors:\n$(cat htmlhint_output.txt)\n\n"
+          if [ -s htmlhint_output.txt ]; then
+            message+="<h3>📄 HTML Lint Errors:</h3><pre>$(cat htmlhint_output.txt)</pre><br>"
           fi
 
-          if grep -q "ERROR" pint_output.txt; then
-            message+="🐘 PHP Code Style Issues:\n$(cat pint_output.txt)\n\n"
+          if [ -s pint_output.txt ]; then
+            message+="<h3>🐘 PHP Code Style Issues:</h3><pre>$(cat pint_output.txt)</pre><br>"
           fi
 
-          if grep -q "FAILURES" phpunit_output.txt; then
-            message+="⚡ PHPUnit Test Failures:\n$(cat phpunit_output.txt)\n\n"
+          if [ -s phpunit_output.txt ]; then
+            message+="<h3>⚡ PHPUnit Test Failures:</h3><pre>$(cat phpunit_output.txt)</pre><br>"
           fi
 
           if [ -s security_output.txt ]; then
-            message+="🔒 Vulnerabilities Found:\n$(cat security_output.txt)\n\n"
+            message+="<h3>🔒 Security Vulnerabilities:</h3><pre>$(cat security_output.txt)</pre><br>"
           fi
 
-          printf "$message" | msmtp ${{ secrets.RECIPIENT_EMAIL }}
+          if [ -z "$message" ]; then
+            message="<h2>✅ No issues found!</h2>"
+          fi
+
+          # Send the email
+          echo -e "Subject: Laravel CI Report\nContent-Type: text/html\n\n$message" | msmtp ${{ secrets.RECIPIENT_EMAIL }}
