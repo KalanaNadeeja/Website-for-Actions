@@ -87,7 +87,12 @@ jobs:
       - name: Run PHPUnit Tests
         run: php artisan test --testsuite=Feature --testsuite=Unit | tee phpunit_output.txt || true
 
-      # Commit and Push Laravel Pint Fixes (if any)
+      # Pull the latest changes from main (Fix for non-fast-forward error)
+      - name: Pull Latest Changes from Main
+        run: |
+          git pull origin main --rebase
+
+      # Commit and Push Laravel Pint Fixes
       - name: Commit and Push Laravel Pint Fixes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
