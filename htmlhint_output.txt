@@ -19,4 +19,4 @@
 [37m      L8 |[90m    <h1 id="duplicate">Test</h1> <!-- Duplicate ID should trigger "id-unique" -->[39m
 [37m                 ^ [31mThe id value [ duplicate ] must be unique. (id-unique)[39m
 
-Scanned 3 files, found 7 errors in 3 files (14 ms)
+Scanned 3 files, found 7 errors in 3 files (19 ms)
